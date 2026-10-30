@@ -1,0 +1,95 @@
+#!/bin/bash
+
+# ShaKy8 screensaver: the ttfx logo, alternating with live ATMOS//NET weather screens.
+#
+# Installed as ~/.local/bin/ttfx so it shadows /usr/bin/ttfx. Omarchy's own
+# omarchy-screensaver calls ttfx once per logo effect and keeps running while a
+# process named ttfx exists, so this wrapper decides what each of those calls
+# shows: a weather cycle, or one real ttfx logo effect. Nothing under /usr is edited.
+# Any ttfx not started by omarchy-screensaver passes straight through.
+#
+# Settings (environment):
+#   SHAKY8_URL         weather site                  (default https://branyontech.com/weather/)
+#   SHAKY8_SEQUENCE    view:seconds ...              (default "deck:60 radar:60 sky:60 air:60")
+#   SHAKY8_LOGO_SECS   logo time between cycles      (default 20)
+#   SHAKY8_PORT        Chromium DevTools port        (default 9337)
+
+REAL_TTFX=/usr/bin/ttfx
+
+if [[ $(tr '\0' ' ' </proc/$PPID/cmdline 2>/dev/null) != *omarchy-screensaver* ]]; then
+  exec "$REAL_TTFX" "$@"
+fi
+
+URL=${SHAKY8_URL:-https://branyontech.com/weather/}
+SEQUENCE=${SHAKY8_SEQUENCE:-"deck:60 radar:60 sky:60 air:60"}
+LOGO_SECS=${SHAKY8_LOGO_SECS:-20}
+PORT=${SHAKY8_PORT:-9337}
+STATE_DIR=${XDG_CACHE_HOME:-$HOME/.cache}/shaky8-screensaver
+PROFILE=$STATE_DIR/chromium
+STATE=$STATE_DIR/state
+DRIVER=${SHAKY8_DRIVER:-$HOME/.local/share/shaky8-screensaver/shaky8-weather-driver.mjs}
+mkdir -p "$STATE_DIR"
+
+# `touch ~/.cache/shaky8-screensaver/debug` to trace each call into ~/.cache/shaky8-screensaver/log
+if [[ -e $STATE_DIR/debug ]]; then
+  exec 2>>"$STATE_DIR/log"
+  set -x
+fi
+
+exit_screensaver() {
+  hyprctl eval 'hl.config({ cursor = { invisible = false } })' &>/dev/null || hyprctl keyword cursor:invisible false &>/dev/null || true
+  pkill -f -- "user-data-dir=$PROFILE" 2>/dev/null
+  pkill -f '[o]rg.omarchy.screensaver' 2>/dev/null
+  exit 0
+}
+
+# $PPID is omarchy-screensaver; its pid tells a new screensaver session from the next
+# call in the same one. state: "<pid> <epoch the current logo phase ends>"
+read -r session logo_until <"$STATE" 2>/dev/null
+now=$(date +%s)
+if [[ $session != "$PPID" ]]; then
+  logo_until=$((now + LOGO_SECS)) # each session opens on the logo
+  echo "$PPID $logo_until" >"$STATE"
+fi
+
+# Chromium is given the screensaver's window class so Omarchy's fullscreen window
+# rule and omarchy-screensaver's "is the screensaver still focused" check both apply.
+show_weather() {
+  chromium --kiosk --class=org.omarchy.screensaver --user-data-dir="$PROFILE" \
+    --remote-debugging-port="$PORT" --disable-extensions --no-first-run \
+    --noerrdialogs --disable-infobars --disable-session-crashed-bubble \
+    --disable-features=Translate "$URL" >/dev/null 2>&1 &
+
+  node "$DRIVER" "$PORT" "$URL" $SEQUENCE
+  local status=$?
+
+  pkill -f -- "user-data-dir=$PROFILE" 2>/dev/null
+  [[ $status == 10 ]] && exit_screensaver
+  echo "$PPID $(($(date +%s) + LOGO_SECS))" >"$STATE"
+  # Let focus settle back on the terminal before omarchy-screensaver looks again.
+  sleep 1
+}
+
+if ((now >= logo_until)); then
+  if curl -sf --max-time 5 -o /dev/null "$URL"; then
+    show_weather
+  else
+    # Offline or site down: stay on the logo and look again after this phase.
+    echo "$PPID $((now + LOGO_SECS))" >"$STATE"
+  fi
+  exit 0
+fi
+
+# Logo phase: one real effect, ending the screensaver on mouse movement too
+# (omarchy-screensaver itself only watches the keyboard).
+start_pos=$(hyprctl cursorpos 2>/dev/null)
+(
+  while sleep 0.5; do
+    [[ $(hyprctl cursorpos 2>/dev/null) == "$start_pos" ]] || exit_screensaver
+  done
+) &
+watcher=$!
+"$REAL_TTFX" "$@"
+status=$?
+kill "$watcher" 2>/dev/null
+exit "$status"
