@@ -10,7 +10,7 @@
 #
 # Settings (environment):
 #   SHAKY8_URL         weather site                  (default https://branyontech.com/weather/)
-#   SHAKY8_SEQUENCE    view:seconds ...              (default "deck:60 radar:60 sky:60 air:60 data:60 overhead:60")
+#   SHAKY8_SEQUENCE    view:seconds ...              (default "deck:60 radar:60")
 #   SHAKY8_LOGO_SECS   logo time between cycles      (default 20)
 #   SHAKY8_PORT        Chromium DevTools port        (default 9337)
 
@@ -21,7 +21,7 @@ if [[ $(tr '\0' ' ' </proc/$PPID/cmdline 2>/dev/null) != *omarchy-screensaver* ]
 fi
 
 URL=${SHAKY8_URL:-https://branyontech.com/weather/}
-SEQUENCE=${SHAKY8_SEQUENCE:-"deck:60 radar:60 sky:60 air:60 data:60 overhead:60"}
+SEQUENCE=${SHAKY8_SEQUENCE:-"deck:60 radar:60"}
 LOGO_SECS=${SHAKY8_LOGO_SECS:-20}
 PORT=${SHAKY8_PORT:-9337}
 STATE_DIR=${XDG_CACHE_HOME:-$HOME/.cache}/shaky8-screensaver

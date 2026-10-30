@@ -9,7 +9,7 @@ Each time the screensaver starts it opens on the logo, then loops:
 
 1. Logo for about 20 seconds (one or more random `ttfx` effects).
 2. A fullscreen Chromium window showing the live weather site at your current location,
-   stepping through **Deck, Radar, Sky, Air, Data, Above**, 60 seconds each.
+   stepping through **Deck, Radar**, 60 seconds each.
 3. Back to the logo.
 
 Any key press or mouse movement exits, in both the logo and weather phases. If the site
@@ -72,7 +72,7 @@ screensaver, so edit the defaults in the file and re-run `./install.sh`.
 | Setting | Default | Meaning |
 |---|---|---|
 | `SHAKY8_URL` | `https://branyontech.com/weather/` | Weather site to show |
-| `SHAKY8_SEQUENCE` | `deck:60 radar:60 sky:60 air:60 data:60 overhead:60` | Space-separated `view:seconds` steps, in order. The six views are `deck`, `radar`, `sky`, `air`, `data`, and `overhead` (the site's Above tab) |
+| `SHAKY8_SEQUENCE` | `deck:60 radar:60` | Space-separated `view:seconds` steps, in order. The six views are `deck`, `radar`, `sky`, `air`, `data`, and `overhead` (the site's Above tab) |
 | `SHAKY8_LOGO_SECS` | `20` | Minimum logo time between weather cycles. Effects run to completion, so a phase can overrun by up to about 10 seconds |
 | `SHAKY8_PORT` | `9337` | Chromium DevTools port, if something else uses it |
 | `SHAKY8_DRIVER` | `~/.local/share/shaky8-screensaver/shaky8-weather-driver.mjs` | Path to the driver script |
