@@ -68,10 +68,15 @@ if (!target) done(20);
 
 const page = await connect(target.webSocketDebuggerUrl);
 page.on((m) => {
+  if (m.method === 'Inspector.targetCrashed') console.error('page crashed');
+  if (m.method === 'Runtime.exceptionThrown') {
+    console.error('page error:', m.params.exceptionDetails.exception?.description || m.params.exceptionDetails.text);
+  }
   if (m.method !== 'Runtime.bindingCalled') return;
   console.error('input:', m.params.payload);
   done(10);
 });
+await page.send('Inspector.enable');
 await page.send('Runtime.enable');
 await page.send('Runtime.addBinding', { name: 'shaky8Input' });
 await page.send('Page.enable');
@@ -83,10 +88,22 @@ const ready = await waitFor(async () => (await evaluate('document.readyState')).
 if (!ready) done(20);
 await sleep(4000); // let the boot sequence and first location settle
 
+const activeView = async () => (await evaluate(`document.querySelector('.view.active')?.dataset.view`)).result?.result?.value;
+
 for (const step of steps) {
   const [view, secs] = step.split(':');
   await evaluate(`location.hash = ${JSON.stringify(view)}`);
-  await sleep(Number(secs) * 1000);
+  await sleep(2000);
+  let showing = await activeView();
+  if (showing !== view) {
+    // The hash didn't take; press the site's own tab instead.
+    console.error(`view ${view}: page shows ${showing}, clicking its tab`);
+    await evaluate(`document.querySelector('[role=tab][data-view=${JSON.stringify(view)}]')?.click()`);
+    await sleep(2000);
+    showing = await activeView();
+  }
+  console.error(`view ${view}: page shows ${showing}`);
+  await sleep(Math.max(0, Number(secs) * 1000 - 4000));
 }
 
 await browser.send('Browser.close');
