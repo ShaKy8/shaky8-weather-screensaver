@@ -3,6 +3,10 @@
 An Omarchy screensaver that alternates the ShaKy8 logo (the `ttfx` text effect) with live
 [ATMOS//NET](https://branyontech.com/weather/) weather screens.
 
+> **Status (2026-11-06):** currently uninstalled on this machine. The stock Omarchy
+> screensaver is in use (showing the ShaKy8 text from
+> `~/.config/omarchy/branding/screensaver.txt`). Run `./install.sh` to bring this back.
+
 ## What it does
 
 Each time the screensaver starts it opens on the logo, then loops:
