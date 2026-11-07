@@ -5,7 +5,9 @@ An Omarchy screensaver that alternates the ShaKy8 logo (the `ttfx` text effect) 
 
 > **Status (2026-11-06):** currently uninstalled on this machine. The stock Omarchy
 > screensaver is in use (showing the ShaKy8 text from
-> `~/.config/omarchy/branding/screensaver.txt`). Run `./install.sh` to bring this back.
+> `~/.config/omarchy/branding/screensaver.txt`), and the idle timers in
+> `~/.config/omarchy/shell.json` are back at stock (screensaver after 150 s, lock after
+> 300 s). Run `./install.sh` to bring this back.
 
 ## What it does
 
